@@ -1,10 +1,20 @@
 import { Request, Response, NextFunction } from 'express';
+import mongoose from 'mongoose';
 import Department from '../models/Department';
 import { logAudit } from '../utils/audit';
 import { logger } from '../utils/logger';
+import { DEMO_DEPARTMENTS } from '../utils/demoData';
 
 export const getDepartments = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(200).json({
+        success: true,
+        count: DEMO_DEPARTMENTS.length,
+        departments: DEMO_DEPARTMENTS,
+      });
+    }
+
     let departments = await Department.find().sort({ name: 1 });
 
     // Seed default departments if none exist

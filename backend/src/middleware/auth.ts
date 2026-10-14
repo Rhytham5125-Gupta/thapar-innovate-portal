@@ -1,3 +1,5 @@
+import mongoose from 'mongoose';
+import { DEMO_USERS } from '../utils/demoData';
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
@@ -52,8 +54,14 @@ export const protect = async (req: Request, res: Response, next: NextFunction): 
     try {
       const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET) as ITokenPayload;
 
-      // Get user from database
-      const user = await User.findById(decoded.userId);
+      // Get user from database (or fallback to DEMO_USERS in serverless preview mode)
+      let user: any;
+      if (mongoose.connection.readyState === 1) {
+        user = await User.findById(decoded.userId);
+      } else {
+        user = DEMO_USERS.find((u) => u._id === decoded.userId);
+      }
+
       if (!user) {
         return res.status(401).json({ success: false, message: 'User no longer exists' });
       }

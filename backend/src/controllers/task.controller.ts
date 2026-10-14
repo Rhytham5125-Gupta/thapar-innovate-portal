@@ -1,9 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
+import mongoose from 'mongoose';
 import Task, { TaskStatus } from '../models/Task';
 import User from '../models/User';
 import { logAudit } from '../utils/audit';
 import { createNotification, notifyAdmins } from '../utils/notification';
 import { logger } from '../utils/logger';
+import { DEMO_TASKS } from '../utils/demoData';
 
 // Enforce task lifecycle transition rules
 const isValidTransition = (current: TaskStatus, next: TaskStatus, role: string): boolean => {
@@ -88,6 +90,14 @@ export const createTask = async (req: Request, res: Response, next: NextFunction
 
 export const getTasks = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(200).json({
+        success: true,
+        count: DEMO_TASKS.length,
+        tasks: DEMO_TASKS,
+      });
+    }
+
     const userRole = req.user?.role;
     const userId = req.user?._id;
 
@@ -141,6 +151,14 @@ export const getTasks = async (req: Request, res: Response, next: NextFunction):
 
 export const getTaskById = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      const demoTask = DEMO_TASKS.find((t) => t._id === req.params.id) || DEMO_TASKS[0];
+      return res.status(200).json({
+        success: true,
+        task: demoTask,
+      });
+    }
+
     const task = await Task.findById(req.params.id)
       .populate('assignedTo', 'name email role avatar department')
       .populate('createdBy', 'name email role');

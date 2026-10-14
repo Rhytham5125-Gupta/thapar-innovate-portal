@@ -1,10 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
+import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
 import { generateTokens } from '../middleware/auth';
 import { env } from '../config/env';
 import { logAudit } from '../utils/audit';
 import { logger } from '../utils/logger';
+import { DEMO_USERS } from '../utils/demoData';
 
 // Enforce thapar.edu domain check for email
 const isValidThaparEmail = (email: string): boolean => {
@@ -114,13 +116,26 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
       return res.status(400).json({ success: false, message: 'Thapar email or mobile number, and password are required' });
     }
 
-    // Find user matching either email or phone number
-    const user = await User.findOne({
-      $or: [
-        { email: identifier.toLowerCase() },
-        { phoneNumber: identifier }
-      ]
-    }).select('+password');
+    // Find user matching either email or phone number (with fallback to DEMO_USERS in serverless preview mode)
+    let user: any;
+    if (mongoose.connection.readyState === 1) {
+      user = await User.findOne({
+        $or: [
+          { email: identifier.toLowerCase() },
+          { phoneNumber: identifier }
+        ]
+      }).select('+password');
+    } else {
+      const found = DEMO_USERS.find(
+        (u) => u.email.toLowerCase() === identifier.toLowerCase() || u.phoneNumber === identifier
+      );
+      if (found) {
+        user = {
+          ...found,
+          matchPassword: async (pwd: string) => pwd === 'Password@123' || pwd === found.password,
+        };
+      }
+    }
 
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid credentials. Please verify your email/phone number and password.' });

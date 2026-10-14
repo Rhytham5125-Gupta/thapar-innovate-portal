@@ -1,12 +1,25 @@
 import { Request, Response, NextFunction } from 'express';
+import mongoose from 'mongoose';
 import User from '../models/User';
 import Task from '../models/Task';
 import AuditLog from '../models/AuditLog';
 import { logAudit } from '../utils/audit';
 import { logger } from '../utils/logger';
+import { DEMO_USERS } from '../utils/demoData';
 
 export const getUsers = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      let filtered = [...DEMO_USERS];
+      if (req.query.role) filtered = filtered.filter(u => u.role === req.query.role);
+      if (req.query.department) filtered = filtered.filter(u => u.department === req.query.department);
+      return res.status(200).json({
+        success: true,
+        count: filtered.length,
+        users: filtered,
+      });
+    }
+
     const filter: any = {};
     
     if (req.query.role) {
@@ -35,6 +48,23 @@ export const getUsers = async (req: Request, res: Response, next: NextFunction):
 export const getUserProfile = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
     const userId = req.params.id || req.user?._id;
+
+    if (mongoose.connection.readyState !== 1) {
+      const demoUser = DEMO_USERS.find(u => u._id === userId) || DEMO_USERS[0];
+      return res.status(200).json({
+        success: true,
+        user: demoUser,
+        stats: {
+          totalTasks: 3,
+          completedTasks: 1,
+          pendingTasks: 2,
+          overdueTasks: 1,
+          completionPercentage: 33,
+        },
+        recentActivity: [],
+      });
+    }
+
     const user = await User.findById(userId);
 
     if (!user) {

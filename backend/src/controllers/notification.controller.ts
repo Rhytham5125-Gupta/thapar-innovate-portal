@@ -1,9 +1,18 @@
 import { Request, Response, NextFunction } from 'express';
+import mongoose from 'mongoose';
 import Notification from '../models/Notification';
 import { logger } from '../utils/logger';
 
 export const getNotifications = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(200).json({
+        success: true,
+        unreadCount: 0,
+        notifications: [],
+      });
+    }
+
     const userId = req.user?._id;
     const limit = parseInt(req.query.limit as string) || 50;
 

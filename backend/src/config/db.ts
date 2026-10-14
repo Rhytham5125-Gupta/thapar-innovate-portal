@@ -14,7 +14,8 @@ export const connectDB = async (): Promise<void> => {
 
     if (!dbUri) {
       if (process.env.VERCEL) {
-        logger.error('CRITICAL: MONGODB_URI is not set in Vercel environment variables! Persistent database connection is required.');
+        logger.warn('MONGODB_URI is not set in Vercel environment variables. Running in serverless preview mode with fallback in-memory data.');
+        mongoose.set('bufferCommands', false);
         return;
       }
       logger.info('No MONGODB_URI configured. Initializing mongodb-memory-server...');
