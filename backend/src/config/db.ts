@@ -13,16 +13,22 @@ export const connectDB = async (): Promise<void> => {
   try {
     let dbUri = env.MONGODB_URI;
 
-    if (!dbUri || env.NODE_ENV === 'test') {
+    if (!dbUri) {
+      if (process.env.VERCEL) {
+        logger.error('CRITICAL: MONGODB_URI is not set in Vercel environment variables! Persistent database connection is required.');
+        return;
+      }
       logger.info('No MONGODB_URI configured. Initializing mongodb-memory-server...');
       mongoMemoryServer = await MongoMemoryServer.create();
       dbUri = mongoMemoryServer.getUri();
       logger.info(`In-memory database initialized at: ${dbUri}`);
     }
 
-    mongoose.set('strictQuery', true);
-    await mongoose.connect(dbUri);
-    logger.info('Database connection established successfully.');
+    if (dbUri) {
+      mongoose.set('strictQuery', true);
+      await mongoose.connect(dbUri);
+      logger.info('Database connection established successfully.');
+    }
   } catch (error) {
     logger.error('Failed to connect to the database:', error);
     if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {

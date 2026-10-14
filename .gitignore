@@ -24,3 +24,5 @@ backend/uploads/
 .vercel
 .agents/
 .DS_Store
+
+.vercel
