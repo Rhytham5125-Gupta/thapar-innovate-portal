@@ -40,7 +40,7 @@ export const submitWork = async (req: Request, res: Response, next: NextFunction
     }
 
     // Get files from Multer
-    const reqFiles = req.files as Express.Multer.File[];
+    const reqFiles = ((req as any).files || []) as any[];
     if (!reqFiles || reqFiles.length === 0) {
       return res.status(400).json({ success: false, message: 'At least one file attachment is required for submission.' });
     }

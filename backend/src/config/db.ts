@@ -1,9 +1,8 @@
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import { env } from './env';
 import { logger } from '../utils/logger';
 
-let mongoMemoryServer: MongoMemoryServer | null = null;
+let mongoMemoryServer: any = null;
 
 export const connectDB = async (): Promise<void> => {
   if (mongoose.connection.readyState >= 1) {
@@ -19,6 +18,7 @@ export const connectDB = async (): Promise<void> => {
         return;
       }
       logger.info('No MONGODB_URI configured. Initializing mongodb-memory-server...');
+      const { MongoMemoryServer } = await import('mongodb-memory-server');
       mongoMemoryServer = await MongoMemoryServer.create();
       dbUri = mongoMemoryServer.getUri();
       logger.info(`In-memory database initialized at: ${dbUri}`);
